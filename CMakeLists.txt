@@ -14,7 +14,7 @@ file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
 
 ExternalProject_Add(tensorflow_src
   GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
-  GIT_TAG b874783ccdf4cc36cb3546e6b6a998cb8f3470bb
+  GIT_TAG 3e582feec7b7e1b71d5a4b590edc1e4d4e4a3126
   PATCH_COMMAND bash -c "for i in ${CMAKE_SOURCE_DIR}/patches/*.patch\$<SEMICOLON> do git apply -p1 $i\$<SEMICOLON> done"
   UPDATE_COMMAND ""
   SOURCE_DIR tensorflow_src
