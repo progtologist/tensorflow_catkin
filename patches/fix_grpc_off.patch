@@ -1,0 +1,1183 @@
+diff --git a/tensorflow/contrib/cmake/tf_core_framework.cmake b/tensorflow/contrib/cmake/tf_core_framework.cmake
+index b47c32f..34ed324 100644
+--- a/tensorflow/contrib/cmake/tf_core_framework.cmake
++++ b/tensorflow/contrib/cmake/tf_core_framework.cmake
+@@ -177,13 +177,16 @@ RELATIVE_PROTOBUF_TEXT_GENERATE_CPP(PROTO_TEXT_SRCS PROTO_TEXT_HDRS
+ if(WIN32)
+   add_library(tf_protos_cc ${PROTO_SRCS} ${PROTO_HDRS})
+ else()
+-  file(GLOB_RECURSE tf_protos_grpc_cc_srcs RELATIVE ${tensorflow_source_dir}
+-      "${tensorflow_source_dir}/tensorflow/core/debug/*.proto"
+-  )
+-  RELATIVE_PROTOBUF_GENERATE_GRPC_CPP(PROTO_GRPC_SRCS PROTO_GRPC_HDRS
+-      ${tensorflow_source_dir} ${tf_protos_grpc_cc_srcs}
+-  )
+-  add_library(tf_protos_cc ${PROTO_GRPC_SRCS} ${PROTO_GRPC_HDRS} ${PROTO_SRCS} ${PROTO_HDRS})
++  if(tensorflow_ENABLE_GRPC_SUPPORT)
++    file(GLOB_RECURSE tf_protos_grpc_cc_srcs RELATIVE ${tensorflow_source_dir}
++        "${tensorflow_source_dir}/tensorflow/core/debug/*.proto"
++    )
++    RELATIVE_PROTOBUF_GENERATE_GRPC_CPP(PROTO_GRPC_SRCS PROTO_GRPC_HDRS
++        ${tensorflow_source_dir} ${tf_protos_grpc_cc_srcs}
++    )
++    add_library(tf_protos_cc ${PROTO_GRPC_SRCS} ${PROTO_GRPC_HDRS})
++  endif(tensorflow_ENABLE_GRPC_SUPPORT)
++  add_library(tf_protos_cc ${PROTO_SRCS} ${PROTO_HDRS})
+ endif()
+ 
+ ########################################################
+diff --git a/tensorflow/core/debug/debug_io_utils.cc b/tensorflow/core/debug/debug_io_utils.cc
+index baa8c08..db8d593 100644
+--- a/tensorflow/core/debug/debug_io_utils.cc
++++ b/tensorflow/core/debug/debug_io_utils.cc
+@@ -22,12 +22,12 @@ limitations under the License.
+ #include <utility>
+ #include <vector>
+ 
+-#ifndef PLATFORM_WINDOWS
+-#include "grpc++/create_channel.h"
+-#else
+-// winsock2.h is used in grpc, so Ws2_32.lib is needed
+-#pragma comment(lib, "Ws2_32.lib")
+-#endif  // #ifndef PLATFORM_WINDOWS
++//#ifndef PLATFORM_WINDOWS
++//#include "grpc++/create_channel.h"
++//#else
++//// winsock2.h is used in grpc, so Ws2_32.lib is needed
++//#pragma comment(lib, "Ws2_32.lib")
++//#endif  // #ifndef PLATFORM_WINDOWS
+ 
+ #include "tensorflow/core/debug/debug_callback_registry.h"
+ #include "tensorflow/core/debug/debugger_event_metadata.pb.h"
+@@ -238,44 +238,44 @@ string AppendTimestampToFilePath(const string& in, const uint64 timestamp) {
+   return out;
+ }
+ 
+-#ifndef PLATFORM_WINDOWS
+-// Publishes encoded GraphDef through a gRPC debugger stream, in chunks,
+-// conforming to the gRPC message size limit.
+-Status PublishEncodedGraphDefInChunks(const string& encoded_graph_def,
+-                                      const string& device_name,
+-                                      const int64 wall_time,
+-                                      const string& debug_url) {
+-  const uint64 hash = ::tensorflow::Hash64(encoded_graph_def);
+-  const size_t total_length = encoded_graph_def.size();
+-  const size_t num_chunks =
+-      static_cast<size_t>(std::ceil(static_cast<float>(total_length) /
+-                                    DebugGrpcIO::kGrpcMessageSizeLimitBytes));
+-  for (size_t i = 0; i < num_chunks; ++i) {
+-    const size_t pos = i * DebugGrpcIO::kGrpcMessageSizeLimitBytes;
+-    const size_t len = (i == num_chunks - 1)
+-                           ? (total_length - pos)
+-                           : DebugGrpcIO::kGrpcMessageSizeLimitBytes;
+-    Event event;
+-    event.set_wall_time(static_cast<double>(wall_time));
+-    // Prefix the chunk with
+-    //   <hash64>,<device_name>,<wall_time>|<index>|<num_chunks>|.
+-    // TODO(cais): Use DebuggerEventMetadata to store device_name, num_chunks
+-    // and chunk_index, instead.
+-    event.set_graph_def(strings::StrCat(hash, ",", device_name, ",", wall_time,
+-                                        "|", i, "|", num_chunks, "|",
+-                                        encoded_graph_def.substr(pos, len)));
+-    const Status s = DebugGrpcIO::SendEventProtoThroughGrpcStream(
+-        event, debug_url, num_chunks - 1 == i);
+-    if (!s.ok()) {
+-      return errors::FailedPrecondition(
+-          "Failed to send chunk ", i, " of ", num_chunks,
+-          " of encoded GraphDef of size ", encoded_graph_def.size(), " bytes, ",
+-          "due to: ", s.error_message());
+-    }
+-  }
+-  return Status::OK();
+-}
+-#endif  // #ifndef PLATFORM_WINDOWS
++//#ifndef PLATFORM_WINDOWS
++//// Publishes encoded GraphDef through a gRPC debugger stream, in chunks,
++//// conforming to the gRPC message size limit.
++//Status PublishEncodedGraphDefInChunks(const string& encoded_graph_def,
++                                      //const string& device_name,
++                                      //const int64 wall_time,
++                                      //const string& debug_url) {
++  //const uint64 hash = ::tensorflow::Hash64(encoded_graph_def);
++  //const size_t total_length = encoded_graph_def.size();
++  //const size_t num_chunks =
++      //static_cast<size_t>(std::ceil(static_cast<float>(total_length) /
++                                    //DebugGrpcIO::kGrpcMessageSizeLimitBytes));
++  //for (size_t i = 0; i < num_chunks; ++i) {
++    //const size_t pos = i * DebugGrpcIO::kGrpcMessageSizeLimitBytes;
++    //const size_t len = (i == num_chunks - 1)
++                           //? (total_length - pos)
++                           //: DebugGrpcIO::kGrpcMessageSizeLimitBytes;
++    //Event event;
++    //event.set_wall_time(static_cast<double>(wall_time));
++    //// Prefix the chunk with
++    ////   <hash64>,<device_name>,<wall_time>|<index>|<num_chunks>|.
++    //// TODO(cais): Use DebuggerEventMetadata to store device_name, num_chunks
++    //// and chunk_index, instead.
++    //event.set_graph_def(strings::StrCat(hash, ",", device_name, ",", wall_time,
++                                        //"|", i, "|", num_chunks, "|",
++                                        //encoded_graph_def.substr(pos, len)));
++    //const Status s = DebugGrpcIO::SendEventProtoThroughGrpcStream(
++        //event, debug_url, num_chunks - 1 == i);
++    //if (!s.ok()) {
++      //return errors::FailedPrecondition(
++          //"Failed to send chunk ", i, " of ", num_chunks,
++          //" of encoded GraphDef of size ", encoded_graph_def.size(), " bytes, ",
++          //"due to: ", s.error_message());
++    //}
++  //}
++  //return Status::OK();
++//}
++//#endif  // #ifndef PLATFORM_WINDOWS
+ 
+ }  // namespace
+ 
+@@ -369,26 +369,26 @@ Status DebugIO::PublishDebugMetadata(
+   Status status;
+   for (const string& url : debug_urls) {
+     if (str_util::Lowercase(url).find(kGrpcURLScheme) == 0) {
+-#ifndef PLATFORM_WINDOWS
+-      Event grpc_event;
+-
+-      // Determine the path (if any) in the grpc:// URL, and add it as a field
+-      // of the JSON string.
+-      const string address = url.substr(strlen(DebugIO::kFileURLScheme));
+-      const string path = address.find("/") == string::npos
+-                              ? ""
+-                              : address.substr(address.find("/"));
+-      grpc_event.set_wall_time(event.wall_time());
+-      LogMessage* log_message_grpc = grpc_event.mutable_log_message();
+-      log_message_grpc->set_message(
+-          strings::StrCat(json_metadata.substr(0, json_metadata.size() - 1),
+-                          ",\"grpc_path\":\"", path, "\"}"));
+-
+-      status.Update(
+-          DebugGrpcIO::SendEventProtoThroughGrpcStream(grpc_event, url, true));
+-#else
++//#ifndef PLATFORM_WINDOWS
++      //Event grpc_event;
++
++      //// Determine the path (if any) in the grpc:// URL, and add it as a field
++      //// of the JSON string.
++      //const string address = url.substr(strlen(DebugIO::kFileURLScheme));
++      //const string path = address.find("/") == string::npos
++                              //? ""
++                              //: address.substr(address.find("/"));
++      //grpc_event.set_wall_time(event.wall_time());
++      //LogMessage* log_message_grpc = grpc_event.mutable_log_message();
++      //log_message_grpc->set_message(
++          //strings::StrCat(json_metadata.substr(0, json_metadata.size() - 1),
++                          //",\"grpc_path\":\"", path, "\"}"));
++
++      //status.Update(
++          //DebugGrpcIO::SendEventProtoThroughGrpcStream(grpc_event, url, true));
++//#else
+       GRPC_OSS_WINDOWS_UNIMPLEMENTED_ERROR;
+-#endif
++//#endif
+     } else if (str_util::Lowercase(url).find(kFileURLScheme) == 0) {
+       const string dump_root_dir = url.substr(strlen(kFileURLScheme));
+       const string core_metadata_path = AppendTimestampToFilePath(
+@@ -425,17 +425,17 @@ Status DebugIO::PublishDebugTensor(const DebugNodeKey& debug_node_key,
+         fail_statuses.push_back(s);
+       }
+     } else if (str_util::Lowercase(url).find(kGrpcURLScheme) == 0) {
+-#ifndef PLATFORM_WINDOWS
+-      Status s = DebugGrpcIO::SendTensorThroughGrpcStream(
+-          debug_node_key, tensor, wall_time_us, url, gated_grpc);
+-
+-      if (!s.ok()) {
+-        num_failed_urls++;
+-        fail_statuses.push_back(s);
+-      }
+-#else
++//#ifndef PLATFORM_WINDOWS
++      //Status s = DebugGrpcIO::SendTensorThroughGrpcStream(
++          //debug_node_key, tensor, wall_time_us, url, gated_grpc);
++
++      //if (!s.ok()) {
++        //num_failed_urls++;
++        //fail_statuses.push_back(s);
++      //}
++//#else
+       GRPC_OSS_WINDOWS_UNIMPLEMENTED_ERROR;
+-#endif
++//#endif
+     } else if (str_util::Lowercase(url).find(kMemoryURLScheme) == 0) {
+       const string dump_root_dir = url.substr(strlen(kMemoryURLScheme));
+       auto* callback_registry = DebugCallbackRegistry::singleton();
+@@ -498,12 +498,12 @@ Status DebugIO::PublishGraph(const Graph& graph, const string& device_name,
+       status.Update(
+           DebugFileIO::DumpEventProtoToFile(event, dump_root_dir, file_name));
+     } else if (debug_url.find(kGrpcURLScheme) == 0) {
+-#ifndef PLATFORM_WINDOWS
+-      status.Update(PublishEncodedGraphDefInChunks(buf, device_name, now_micros,
+-                                                   debug_url));
+-#else
++//#ifndef PLATFORM_WINDOWS
++      //status.Update(PublishEncodedGraphDefInChunks(buf, device_name, now_micros,
++                                                   //debug_url));
++//#else
+       GRPC_OSS_WINDOWS_UNIMPLEMENTED_ERROR;
+-#endif
++//#endif
+     }
+   }
+ 
+@@ -512,62 +512,62 @@ Status DebugIO::PublishGraph(const Graph& graph, const string& device_name,
+ 
+ bool DebugIO::IsCopyNodeGateOpen(
+     const std::vector<DebugWatchAndURLSpec>& specs) {
+-#ifndef PLATFORM_WINDOWS
+-  for (const DebugWatchAndURLSpec& spec : specs) {
+-    if (!spec.gated_grpc || spec.url.compare(0, strlen(DebugIO::kGrpcURLScheme),
+-                                             DebugIO::kGrpcURLScheme)) {
+-      return true;
+-    } else {
+-      if (DebugGrpcIO::IsReadGateOpen(spec.url, spec.watch_key)) {
+-        return true;
+-      }
+-    }
+-  }
+-  return false;
+-#else
++//#ifndef PLATFORM_WINDOWS
++  //for (const DebugWatchAndURLSpec& spec : specs) {
++    //if (!spec.gated_grpc || spec.url.compare(0, strlen(DebugIO::kGrpcURLScheme),
++                                             //DebugIO::kGrpcURLScheme)) {
++      //return true;
++    //} else {
++      //if (DebugGrpcIO::IsReadGateOpen(spec.url, spec.watch_key)) {
++        //return true;
++      //}
++    //}
++  //}
++  //return false;
++//#else
+   return true;
+-#endif
++//#endif
+ }
+ 
+ bool DebugIO::IsDebugNodeGateOpen(const string& watch_key,
+                                   const std::vector<string>& debug_urls) {
+-#ifndef PLATFORM_WINDOWS
+-  for (const string& debug_url : debug_urls) {
+-    if (debug_url.compare(0, strlen(DebugIO::kGrpcURLScheme),
+-                          DebugIO::kGrpcURLScheme)) {
+-      return true;
+-    } else {
+-      if (DebugGrpcIO::IsReadGateOpen(debug_url, watch_key)) {
+-        return true;
+-      }
+-    }
+-  }
+-  return false;
+-#else
++//#ifndef PLATFORM_WINDOWS
++  //for (const string& debug_url : debug_urls) {
++    //if (debug_url.compare(0, strlen(DebugIO::kGrpcURLScheme),
++                          //DebugIO::kGrpcURLScheme)) {
++      //return true;
++    //} else {
++      //if (DebugGrpcIO::IsReadGateOpen(debug_url, watch_key)) {
++        //return true;
++      //}
++    //}
++  //}
++  //return false;
++//#else
+   return true;
+-#endif
++//#endif
+ }
+ 
+ bool DebugIO::IsDebugURLGateOpen(const string& watch_key,
+                                  const string& debug_url) {
+-#ifndef PLATFORM_WINDOWS
+-  if (debug_url.find(kGrpcURLScheme) != 0) {
+-    return true;
+-  } else {
+-    return DebugGrpcIO::IsReadGateOpen(debug_url, watch_key);
+-  }
+-#else
++//#ifndef PLATFORM_WINDOWS
++  //if (debug_url.find(kGrpcURLScheme) != 0) {
++    //return true;
++  //} else {
++    //return DebugGrpcIO::IsReadGateOpen(debug_url, watch_key);
++  //}
++//#else
+   return true;
+-#endif
++//#endif
+ }
+ 
+ Status DebugIO::CloseDebugURL(const string& debug_url) {
+   if (debug_url.find(DebugIO::kGrpcURLScheme) == 0) {
+-#ifndef PLATFORM_WINDOWS
+-    return DebugGrpcIO::CloseGrpcStream(debug_url);
+-#else
++//#ifndef PLATFORM_WINDOWS
++    //return DebugGrpcIO::CloseGrpcStream(debug_url);
++//#else
+     GRPC_OSS_WINDOWS_UNIMPLEMENTED_ERROR;
+-#endif
++//#endif
+   } else {
+     // No-op for non-gRPC URLs.
+     return Status::OK();
+@@ -670,250 +670,250 @@ Status DebugFileIO::RecursiveCreateDir(Env* env, const string& dir) {
+   }
+ }
+ 
+-#ifndef PLATFORM_WINDOWS
+-DebugGrpcChannel::DebugGrpcChannel(const string& server_stream_addr)
+-    : server_stream_addr_(server_stream_addr),
+-      url_(strings::StrCat(DebugIO::kGrpcURLScheme, server_stream_addr)) {}
+-
+-Status DebugGrpcChannel::Connect(const int64 timeout_micros) {
+-  ::grpc::ChannelArguments args;
+-  args.SetInt(GRPC_ARG_MAX_MESSAGE_LENGTH, std::numeric_limits<int32>::max());
+-  // Avoid problems where default reconnect backoff is too long (e.g., 20 s).
+-  args.SetInt("grpc.testing.fixed_reconnect_backoff_ms", 1000);
+-  channel_ = ::grpc::CreateCustomChannel(
+-      server_stream_addr_, ::grpc::InsecureChannelCredentials(), args);
+-  if (!channel_->WaitForConnected(
+-          gpr_time_add(gpr_now(GPR_CLOCK_REALTIME),
+-                       gpr_time_from_micros(timeout_micros, GPR_TIMESPAN)))) {
+-    return errors::FailedPrecondition(
+-        "Failed to connect to gRPC channel at ", server_stream_addr_,
+-        " within a timeout of ", timeout_micros / 1e6, " s.");
+-  }
+-  stub_ = EventListener::NewStub(channel_);
+-  reader_writer_ = stub_->SendEvents(&ctx_);
+-
+-  return Status::OK();
+-}
+-
+-bool DebugGrpcChannel::WriteEvent(const Event& event) {
+-  mutex_lock l(mu_);
+-  return reader_writer_->Write(event);
+-}
+-
+-bool DebugGrpcChannel::ReadEventReply(EventReply* event_reply) {
+-  mutex_lock l(mu_);
+-  return reader_writer_->Read(event_reply);
+-}
+-
+-void DebugGrpcChannel::ReceiveAndProcessEventReplies(const size_t max_replies) {
+-  EventReply event_reply;
+-  size_t num_replies = 0;
+-  while ((max_replies == 0 || ++num_replies <= max_replies) &&
+-         ReadEventReply(&event_reply)) {
+-    for (const EventReply::DebugOpStateChange& debug_op_state_change :
+-         event_reply.debug_op_state_changes()) {
+-      string watch_key = strings::StrCat(debug_op_state_change.node_name(), ":",
+-                                         debug_op_state_change.output_slot(),
+-                                         ":", debug_op_state_change.debug_op());
+-      DebugGrpcIO::SetDebugNodeKeyGrpcState(url_, watch_key,
+-                                            debug_op_state_change.state());
+-    }
+-  }
+-}
+-
+-Status DebugGrpcChannel::ReceiveServerRepliesAndClose() {
+-  reader_writer_->WritesDone();
+-  // Read all EventReply messages (if any) from the server.
+-  ReceiveAndProcessEventReplies(0);
+-
+-  if (reader_writer_->Finish().ok()) {
+-    return Status::OK();
+-  } else {
+-    return Status(error::FAILED_PRECONDITION,
+-                  "Failed to close debug GRPC stream.");
+-  }
+-}
+-
+-mutex DebugGrpcIO::streams_mu(LINKER_INITIALIZED);
+-
+-int64 DebugGrpcIO::channel_connection_timeout_micros = 900 * 1000 * 1000;
+-// TODO(cais): Make this configurable?
+-
+-const size_t DebugGrpcIO::kGrpcMessageSizeLimitBytes = 4000 * 1024;
+-
+-const size_t DebugGrpcIO::kGrpcMaxVarintLengthSize = 6;
+-
+-std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
+-DebugGrpcIO::GetStreamChannels() {
+-  static std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
+-      stream_channels =
+-          new std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>();
+-  return stream_channels;
+-}
+-
+-Status DebugGrpcIO::SendTensorThroughGrpcStream(
+-    const DebugNodeKey& debug_node_key, const Tensor& tensor,
+-    const uint64 wall_time_us, const string& grpc_stream_url,
+-    const bool gated) {
+-  if (gated &&
+-      !IsReadGateOpen(grpc_stream_url, debug_node_key.debug_node_name)) {
+-    return Status::OK();
+-  } else {
+-    std::vector<Event> events;
+-    TF_RETURN_IF_ERROR(WrapTensorAsEvents(debug_node_key, tensor, wall_time_us,
+-                                          kGrpcMessageSizeLimitBytes, &events));
+-    for (const Event& event : events) {
+-      TF_RETURN_IF_ERROR(
+-          SendEventProtoThroughGrpcStream(event, grpc_stream_url));
+-    }
+-    if (IsWriteGateOpen(grpc_stream_url, debug_node_key.debug_node_name)) {
+-      DebugGrpcChannel* debug_grpc_channel = nullptr;
+-      TF_RETURN_IF_ERROR(
+-          GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
+-      debug_grpc_channel->ReceiveAndProcessEventReplies(1);
+-      // TODO(cais): Support new tensor value carried in the EventReply for
+-      // overriding the value of the tensor being published.
+-    }
+-    return Status::OK();
+-  }
+-}
+-
+-Status DebugGrpcIO::ReceiveEventReplyProtoThroughGrpcStream(
+-    EventReply* event_reply, const string& grpc_stream_url) {
+-  DebugGrpcChannel* debug_grpc_channel = nullptr;
+-  TF_RETURN_IF_ERROR(
+-      GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
+-  if (debug_grpc_channel->ReadEventReply(event_reply)) {
+-    return Status::OK();
+-  } else {
+-    return errors::Cancelled(strings::StrCat(
+-        "Reading EventReply from stream URL ", grpc_stream_url, " failed."));
+-  }
+-}
+-
+-Status DebugGrpcIO::GetOrCreateDebugGrpcChannel(
+-    const string& grpc_stream_url, DebugGrpcChannel** debug_grpc_channel) {
+-  const string addr_with_path =
+-      grpc_stream_url.find(DebugIO::kGrpcURLScheme) == 0
+-          ? grpc_stream_url.substr(strlen(DebugIO::kGrpcURLScheme))
+-          : grpc_stream_url;
+-  const string server_stream_addr =
+-      addr_with_path.substr(0, addr_with_path.find('/'));
+-  {
+-    mutex_lock l(streams_mu);
+-    std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
+-        stream_channels = GetStreamChannels();
+-    if (stream_channels->find(grpc_stream_url) == stream_channels->end()) {
+-      std::unique_ptr<DebugGrpcChannel> channel(
+-          new DebugGrpcChannel(server_stream_addr));
+-      TF_RETURN_IF_ERROR(channel->Connect(channel_connection_timeout_micros));
+-      stream_channels->insert(
+-          std::make_pair(grpc_stream_url, std::move(channel)));
+-    }
+-    *debug_grpc_channel = (*stream_channels)[grpc_stream_url].get();
+-  }
+-  return Status::OK();
+-}
+-
+-Status DebugGrpcIO::SendEventProtoThroughGrpcStream(
+-    const Event& event_proto, const string& grpc_stream_url,
+-    const bool receive_reply) {
+-  DebugGrpcChannel* debug_grpc_channel;
+-  TF_RETURN_IF_ERROR(
+-      GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
+-
+-  bool write_ok = debug_grpc_channel->WriteEvent(event_proto);
+-  if (!write_ok) {
+-    return errors::Cancelled(strings::StrCat("Write event to stream URL ",
+-                                             grpc_stream_url, " failed."));
+-  }
+-
+-  if (receive_reply) {
+-    debug_grpc_channel->ReceiveAndProcessEventReplies(1);
+-  }
+-
+-  return Status::OK();
+-}
+-
+-bool DebugGrpcIO::IsReadGateOpen(const string& grpc_debug_url,
+-                                 const string& watch_key) {
+-  const DebugNodeName2State* enabled_node_to_state =
+-      GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
+-  return enabled_node_to_state->find(watch_key) != enabled_node_to_state->end();
+-}
+-
+-bool DebugGrpcIO::IsWriteGateOpen(const string& grpc_debug_url,
+-                                  const string& watch_key) {
+-  const DebugNodeName2State* enabled_node_to_state =
+-      GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
+-  auto it = enabled_node_to_state->find(watch_key);
+-  if (it == enabled_node_to_state->end()) {
+-    return false;
+-  } else {
+-    return it->second == EventReply::DebugOpStateChange::READ_WRITE;
+-  }
+-}
+-
+-Status DebugGrpcIO::CloseGrpcStream(const string& grpc_stream_url) {
+-  mutex_lock l(streams_mu);
+-
+-  std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
+-      stream_channels = GetStreamChannels();
+-  if (stream_channels->find(grpc_stream_url) != stream_channels->end()) {
+-    // Stream of the specified address exists. Close it and remove it from
+-    // record.
+-    Status s =
+-        (*stream_channels)[grpc_stream_url]->ReceiveServerRepliesAndClose();
+-    (*stream_channels).erase(grpc_stream_url);
+-    return s;
+-  } else {
+-    // Stream of the specified address does not exist. No action.
+-    return Status::OK();
+-  }
+-}
+-
+-std::unordered_map<string, DebugGrpcIO::DebugNodeName2State>*
+-DebugGrpcIO::GetEnabledDebugOpStates() {
+-  static std::unordered_map<string, DebugNodeName2State>*
+-      enabled_debug_op_states =
+-          new std::unordered_map<string, DebugNodeName2State>();
+-  return enabled_debug_op_states;
+-}
+-
+-DebugGrpcIO::DebugNodeName2State* DebugGrpcIO::GetEnabledDebugOpStatesAtUrl(
+-    const string& grpc_debug_url) {
+-  static mutex* debug_ops_state_mu = new mutex();
+-  std::unordered_map<string, DebugNodeName2State>* states =
+-      GetEnabledDebugOpStates();
+-
+-  mutex_lock l(*debug_ops_state_mu);
+-  if (states->find(grpc_debug_url) == states->end()) {
+-    DebugNodeName2State url_enabled_debug_op_states;
+-    (*states)[grpc_debug_url] = url_enabled_debug_op_states;
+-  }
+-  return &(*states)[grpc_debug_url];
+-}
+-
+-void DebugGrpcIO::SetDebugNodeKeyGrpcState(
+-    const string& grpc_debug_url, const string& watch_key,
+-    const EventReply::DebugOpStateChange::State new_state) {
+-  DebugNodeName2State* states = GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
+-  if (new_state == EventReply::DebugOpStateChange::DISABLED) {
+-    if (states->find(watch_key) == states->end()) {
+-      LOG(ERROR) << "Attempt to disable a watch key that is not currently "
+-                 << "enabled at " << grpc_debug_url << ": " << watch_key;
+-    } else {
+-      states->erase(watch_key);
+-    }
+-  } else if (new_state != EventReply::DebugOpStateChange::STATE_UNSPECIFIED) {
+-    (*states)[watch_key] = new_state;
+-  }
+-}
+-
+-void DebugGrpcIO::ClearEnabledWatchKeys() {
+-  GetEnabledDebugOpStates()->clear();
+-}
+-
+-#endif  // #ifndef PLATFORM_WINDOWS
++//#ifndef PLATFORM_WINDOWS
++//DebugGrpcChannel::DebugGrpcChannel(const string& server_stream_addr)
++    //: server_stream_addr_(server_stream_addr),
++      //url_(strings::StrCat(DebugIO::kGrpcURLScheme, server_stream_addr)) {}
++
++//Status DebugGrpcChannel::Connect(const int64 timeout_micros) {
++  //::grpc::ChannelArguments args;
++  //args.SetInt(GRPC_ARG_MAX_MESSAGE_LENGTH, std::numeric_limits<int32>::max());
++  //// Avoid problems where default reconnect backoff is too long (e.g., 20 s).
++  //args.SetInt("grpc.testing.fixed_reconnect_backoff_ms", 1000);
++  //channel_ = ::grpc::CreateCustomChannel(
++      //server_stream_addr_, ::grpc::InsecureChannelCredentials(), args);
++  //if (!channel_->WaitForConnected(
++          //gpr_time_add(gpr_now(GPR_CLOCK_REALTIME),
++                       //gpr_time_from_micros(timeout_micros, GPR_TIMESPAN)))) {
++    //return errors::FailedPrecondition(
++        //"Failed to connect to gRPC channel at ", server_stream_addr_,
++        //" within a timeout of ", timeout_micros / 1e6, " s.");
++  //}
++  //stub_ = EventListener::NewStub(channel_);
++  //reader_writer_ = stub_->SendEvents(&ctx_);
++
++  //return Status::OK();
++//}
++
++//bool DebugGrpcChannel::WriteEvent(const Event& event) {
++  //mutex_lock l(mu_);
++  //return reader_writer_->Write(event);
++//}
++
++//bool DebugGrpcChannel::ReadEventReply(EventReply* event_reply) {
++  //mutex_lock l(mu_);
++  //return reader_writer_->Read(event_reply);
++//}
++
++//void DebugGrpcChannel::ReceiveAndProcessEventReplies(const size_t max_replies) {
++  //EventReply event_reply;
++  //size_t num_replies = 0;
++  //while ((max_replies == 0 || ++num_replies <= max_replies) &&
++         //ReadEventReply(&event_reply)) {
++    //for (const EventReply::DebugOpStateChange& debug_op_state_change :
++         //event_reply.debug_op_state_changes()) {
++      //string watch_key = strings::StrCat(debug_op_state_change.node_name(), ":",
++                                         //debug_op_state_change.output_slot(),
++                                         //":", debug_op_state_change.debug_op());
++      //DebugGrpcIO::SetDebugNodeKeyGrpcState(url_, watch_key,
++                                            //debug_op_state_change.state());
++    //}
++  //}
++//}
++
++//Status DebugGrpcChannel::ReceiveServerRepliesAndClose() {
++  //reader_writer_->WritesDone();
++  //// Read all EventReply messages (if any) from the server.
++  //ReceiveAndProcessEventReplies(0);
++
++  //if (reader_writer_->Finish().ok()) {
++    //return Status::OK();
++  //} else {
++    //return Status(error::FAILED_PRECONDITION,
++                  //"Failed to close debug GRPC stream.");
++  //}
++//}
++
++//mutex DebugGrpcIO::streams_mu(LINKER_INITIALIZED);
++
++//int64 DebugGrpcIO::channel_connection_timeout_micros = 900 * 1000 * 1000;
++//// TODO(cais): Make this configurable?
++
++//const size_t DebugGrpcIO::kGrpcMessageSizeLimitBytes = 4000 * 1024;
++
++//const size_t DebugGrpcIO::kGrpcMaxVarintLengthSize = 6;
++
++//std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
++//DebugGrpcIO::GetStreamChannels() {
++  //static std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
++      //stream_channels =
++          //new std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>();
++  //return stream_channels;
++//}
++
++//Status DebugGrpcIO::SendTensorThroughGrpcStream(
++    //const DebugNodeKey& debug_node_key, const Tensor& tensor,
++    //const uint64 wall_time_us, const string& grpc_stream_url,
++    //const bool gated) {
++  //if (gated &&
++      //!IsReadGateOpen(grpc_stream_url, debug_node_key.debug_node_name)) {
++    //return Status::OK();
++  //} else {
++    //std::vector<Event> events;
++    //TF_RETURN_IF_ERROR(WrapTensorAsEvents(debug_node_key, tensor, wall_time_us,
++                                          //kGrpcMessageSizeLimitBytes, &events));
++    //for (const Event& event : events) {
++      //TF_RETURN_IF_ERROR(
++          //SendEventProtoThroughGrpcStream(event, grpc_stream_url));
++    //}
++    //if (IsWriteGateOpen(grpc_stream_url, debug_node_key.debug_node_name)) {
++      //DebugGrpcChannel* debug_grpc_channel = nullptr;
++      //TF_RETURN_IF_ERROR(
++          //GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
++      //debug_grpc_channel->ReceiveAndProcessEventReplies(1);
++      //// TODO(cais): Support new tensor value carried in the EventReply for
++      //// overriding the value of the tensor being published.
++    //}
++    //return Status::OK();
++  //}
++//}
++
++//Status DebugGrpcIO::ReceiveEventReplyProtoThroughGrpcStream(
++    //EventReply* event_reply, const string& grpc_stream_url) {
++  //DebugGrpcChannel* debug_grpc_channel = nullptr;
++  //TF_RETURN_IF_ERROR(
++      //GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
++  //if (debug_grpc_channel->ReadEventReply(event_reply)) {
++    //return Status::OK();
++  //} else {
++    //return errors::Cancelled(strings::StrCat(
++        //"Reading EventReply from stream URL ", grpc_stream_url, " failed."));
++  //}
++//}
++
++//Status DebugGrpcIO::GetOrCreateDebugGrpcChannel(
++    //const string& grpc_stream_url, DebugGrpcChannel** debug_grpc_channel) {
++  //const string addr_with_path =
++      //grpc_stream_url.find(DebugIO::kGrpcURLScheme) == 0
++          //? grpc_stream_url.substr(strlen(DebugIO::kGrpcURLScheme))
++          //: grpc_stream_url;
++  //const string server_stream_addr =
++      //addr_with_path.substr(0, addr_with_path.find('/'));
++  //{
++    //mutex_lock l(streams_mu);
++    //std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
++        //stream_channels = GetStreamChannels();
++    //if (stream_channels->find(grpc_stream_url) == stream_channels->end()) {
++      //std::unique_ptr<DebugGrpcChannel> channel(
++          //new DebugGrpcChannel(server_stream_addr));
++      //TF_RETURN_IF_ERROR(channel->Connect(channel_connection_timeout_micros));
++      //stream_channels->insert(
++          //std::make_pair(grpc_stream_url, std::move(channel)));
++    //}
++    //*debug_grpc_channel = (*stream_channels)[grpc_stream_url].get();
++  //}
++  //return Status::OK();
++//}
++
++//Status DebugGrpcIO::SendEventProtoThroughGrpcStream(
++    //const Event& event_proto, const string& grpc_stream_url,
++    //const bool receive_reply) {
++  //DebugGrpcChannel* debug_grpc_channel;
++  //TF_RETURN_IF_ERROR(
++      //GetOrCreateDebugGrpcChannel(grpc_stream_url, &debug_grpc_channel));
++
++  //bool write_ok = debug_grpc_channel->WriteEvent(event_proto);
++  //if (!write_ok) {
++    //return errors::Cancelled(strings::StrCat("Write event to stream URL ",
++                                             //grpc_stream_url, " failed."));
++  //}
++
++  //if (receive_reply) {
++    //debug_grpc_channel->ReceiveAndProcessEventReplies(1);
++  //}
++
++  //return Status::OK();
++//}
++
++//bool DebugGrpcIO::IsReadGateOpen(const string& grpc_debug_url,
++                                 //const string& watch_key) {
++  //const DebugNodeName2State* enabled_node_to_state =
++      //GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
++  //return enabled_node_to_state->find(watch_key) != enabled_node_to_state->end();
++//}
++
++//bool DebugGrpcIO::IsWriteGateOpen(const string& grpc_debug_url,
++                                  //const string& watch_key) {
++  //const DebugNodeName2State* enabled_node_to_state =
++      //GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
++  //auto it = enabled_node_to_state->find(watch_key);
++  //if (it == enabled_node_to_state->end()) {
++    //return false;
++  //} else {
++    //return it->second == EventReply::DebugOpStateChange::READ_WRITE;
++  //}
++//}
++
++//Status DebugGrpcIO::CloseGrpcStream(const string& grpc_stream_url) {
++  //mutex_lock l(streams_mu);
++
++  //std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
++      //stream_channels = GetStreamChannels();
++  //if (stream_channels->find(grpc_stream_url) != stream_channels->end()) {
++    //// Stream of the specified address exists. Close it and remove it from
++    //// record.
++    //Status s =
++        //(*stream_channels)[grpc_stream_url]->ReceiveServerRepliesAndClose();
++    //(*stream_channels).erase(grpc_stream_url);
++    //return s;
++  //} else {
++    //// Stream of the specified address does not exist. No action.
++    //return Status::OK();
++  //}
++//}
++
++//std::unordered_map<string, DebugGrpcIO::DebugNodeName2State>*
++//DebugGrpcIO::GetEnabledDebugOpStates() {
++  //static std::unordered_map<string, DebugNodeName2State>*
++      //enabled_debug_op_states =
++          //new std::unordered_map<string, DebugNodeName2State>();
++  //return enabled_debug_op_states;
++//}
++
++//DebugGrpcIO::DebugNodeName2State* DebugGrpcIO::GetEnabledDebugOpStatesAtUrl(
++    //const string& grpc_debug_url) {
++  //static mutex* debug_ops_state_mu = new mutex();
++  //std::unordered_map<string, DebugNodeName2State>* states =
++      //GetEnabledDebugOpStates();
++
++  //mutex_lock l(*debug_ops_state_mu);
++  //if (states->find(grpc_debug_url) == states->end()) {
++    //DebugNodeName2State url_enabled_debug_op_states;
++    //(*states)[grpc_debug_url] = url_enabled_debug_op_states;
++  //}
++  //return &(*states)[grpc_debug_url];
++//}
++
++//void DebugGrpcIO::SetDebugNodeKeyGrpcState(
++    //const string& grpc_debug_url, const string& watch_key,
++    //const EventReply::DebugOpStateChange::State new_state) {
++  //DebugNodeName2State* states = GetEnabledDebugOpStatesAtUrl(grpc_debug_url);
++  //if (new_state == EventReply::DebugOpStateChange::DISABLED) {
++    //if (states->find(watch_key) == states->end()) {
++      //LOG(ERROR) << "Attempt to disable a watch key that is not currently "
++                 //<< "enabled at " << grpc_debug_url << ": " << watch_key;
++    //} else {
++      //states->erase(watch_key);
++    //}
++  //} else if (new_state != EventReply::DebugOpStateChange::STATE_UNSPECIFIED) {
++    //(*states)[watch_key] = new_state;
++  //}
++//}
++
++//void DebugGrpcIO::ClearEnabledWatchKeys() {
++  //GetEnabledDebugOpStates()->clear();
++//}
++
++//#endif  // #ifndef PLATFORM_WINDOWS
+ 
+ }  // namespace tensorflow
+diff --git a/tensorflow/core/debug/debug_io_utils.h b/tensorflow/core/debug/debug_io_utils.h
+index c974a47..798b62a 100644
+--- a/tensorflow/core/debug/debug_io_utils.h
++++ b/tensorflow/core/debug/debug_io_utils.h
+@@ -223,179 +223,179 @@ struct hash<::tensorflow::DebugNodeKey> {
+ 
+ // TODO(cais): Support grpc:// debug URLs in open source once Python grpc
+ //   genrule becomes available. See b/23796275.
+-#ifndef PLATFORM_WINDOWS
+-#include "tensorflow/core/debug/debug_service.grpc.pb.h"
+-
+-namespace tensorflow {
+-
+-class DebugGrpcChannel {
+- public:
+-  // Constructor of DebugGrpcChannel.
+-  //
+-  // Args:
+-  //   server_stream_addr: Address (host name and port) of the debug stream
+-  //     server implementing the EventListener service (see
+-  //     debug_service.proto). E.g., "127.0.0.1:12345".
+-  DebugGrpcChannel(const string& server_stream_addr);
+-
+-  virtual ~DebugGrpcChannel() {}
+-
+-  // Attempt to establish connection with server.
+-  //
+-  // Args:
+-  //   timeout_micros: Timeout (in microseconds) for the attempt to establish
+-  //     the connection.
+-  //
+-  // Returns:
+-  //   OK Status iff connection is successfully established before timeout,
+-  //   otherwise return an error Status.
+-  Status Connect(const int64 timeout_micros);
+-
+-  // Write an Event proto to the debug gRPC stream.
+-  //
+-  // Thread-safety: Safe with respect to other calls to the same method and
+-  //   calls to ReadEventReply() and Close().
+-  //
+-  // Args:
+-  //   event: The event proto to be written to the stream.
+-  //
+-  // Returns:
+-  //   True iff the write is successful.
+-  bool WriteEvent(const Event& event);
+-
+-  // Read an EventReply proto from the debug gRPC stream.
+-  //
+-  // This method blocks and waits for an EventReply from the server.
+-  // Thread-safety: Safe with respect to other calls to the same method and
+-  //   calls to WriteEvent() and Close().
+-  //
+-  // Args:
+-  //   event_reply: the to-be-modified EventReply proto passed as reference.
+-  //
+-  // Returns:
+-  //   True iff the read is successful.
+-  bool ReadEventReply(EventReply* event_reply);
+-
+-  // Receive and process EventReply protos from the gRPC debug server.
+-  //
+-  // The processing includes setting debug watch key states using the
+-  // DebugOpStateChange fields of the EventReply.
+-  //
+-  // Args:
+-  //   max_replies: Maximum number of replies to receive. Will receive all
+-  //     remaining replies iff max_replies == 0.
+-  void ReceiveAndProcessEventReplies(size_t max_replies);
+-
+-  // Receive EventReplies from server (if any) and close the stream and the
+-  // channel.
+-  Status ReceiveServerRepliesAndClose();
+-
+- private:
+-  string server_stream_addr_;
+-  string url_;
+-  ::grpc::ClientContext ctx_;
+-  std::shared_ptr<::grpc::Channel> channel_;
+-  std::unique_ptr<EventListener::Stub> stub_;
+-  std::unique_ptr<::grpc::ClientReaderWriterInterface<Event, EventReply>>
+-      reader_writer_;
+-
+-  mutex mu_;
+-};
+-
+-class DebugGrpcIO {
+- public:
+-  static const size_t kGrpcMessageSizeLimitBytes;
+-  static const size_t kGrpcMaxVarintLengthSize;
+-
+-  // Sends a tensor through a debug gRPC stream.
+-  static Status SendTensorThroughGrpcStream(const DebugNodeKey& debug_node_key,
+-                                            const Tensor& tensor,
+-                                            const uint64 wall_time_us,
+-                                            const string& grpc_stream_url,
+-                                            const bool gated);
+-
+-  // Sends an Event proto through a debug gRPC stream.
+-  // Thread-safety: Safe with respect to other calls to the same method and
+-  // calls to CloseGrpcStream().
+-  //
+-  // Args:
+-  //   event_proto: The Event proto to be sent.
+-  //   grpc_stream_url: The grpc:// URL of the stream to use, e.g.,
+-  //     "grpc://localhost:11011", "localhost:22022".
+-  //   receive_reply: Whether an EventReply proto will be read after event_proto
+-  //     is sent and before the function returns.
+-  //
+-  // Returns:
+-  //   The Status of the operation.
+-  static Status SendEventProtoThroughGrpcStream(
+-      const Event& event_proto, const string& grpc_stream_url,
+-      const bool receive_reply = false);
+-
+-  // Receive an EventReply proto through a debug gRPC stream.
+-  static Status ReceiveEventReplyProtoThroughGrpcStream(
+-      EventReply* event_reply, const string& grpc_stream_url);
+-
+-  // Check whether a debug watch key is read-activated at a given gRPC URL.
+-  static bool IsReadGateOpen(const string& grpc_debug_url,
+-                             const string& watch_key);
+-
+-  // Check whether a debug watch key is write-activated (i.e., read- and
+-  // write-activated) at a given gRPC URL.
+-  static bool IsWriteGateOpen(const string& grpc_debug_url,
+-                              const string& watch_key);
+-
+-  // Closes a gRPC stream to the given address, if it exists.
+-  // Thread-safety: Safe with respect to other calls to the same method and
+-  // calls to SendTensorThroughGrpcStream().
+-  static Status CloseGrpcStream(const string& grpc_stream_url);
+-
+-  // Set the gRPC state of a debug node key.
+-  // TODO(cais): Include device information in watch_key.
+-  static void SetDebugNodeKeyGrpcState(
+-      const string& grpc_debug_url, const string& watch_key,
+-      const EventReply::DebugOpStateChange::State new_state);
+-
+- private:
+-  using DebugNodeName2State =
+-      std::unordered_map<string, EventReply::DebugOpStateChange::State>;
+-
+-  // Returns a global map from grpc debug URLs to the corresponding
+-  // DebugGrpcChannels.
+-  static std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
+-  GetStreamChannels();
+-
+-  // Get a DebugGrpcChannel object at a given URL, creating one if necessary.
+-  //
+-  // Args:
+-  //   grpc_stream_url: grpc:// URL of the stream, e.g., "grpc://localhost:6064"
+-  //   debug_grpc_channel: A pointer to the DebugGrpcChannel object, passed as a
+-  //     a pointer to the pointer. The DebugGrpcChannel object is owned
+-  //     statically elsewhere, not by the caller of this function.
+-  //
+-  // Returns:
+-  //   Status of this operation.
+-  static Status GetOrCreateDebugGrpcChannel(
+-      const string& grpc_stream_url, DebugGrpcChannel** debug_grpc_channel);
+-
+-  // Returns a map from debug URL to a map from debug op name to enabled state.
+-  static std::unordered_map<string, DebugNodeName2State>*
+-  GetEnabledDebugOpStates();
+-
+-  // Returns a map from debug op names to enabled state, for a given debug URL.
+-  static DebugNodeName2State* GetEnabledDebugOpStatesAtUrl(
+-      const string& grpc_debug_url);
+-
+-  // Clear enabled debug op state from all debug URLs (if any).
+-  static void ClearEnabledWatchKeys();
+-
+-  static mutex streams_mu;
+-  static int64 channel_connection_timeout_micros;
+-
+-  friend class GrpcDebugTest;
+-  friend class DebugNumericSummaryOpTest;
+-};
+-
+-}  // namespace tensorflow
+-#endif  // #ifndef(PLATFORM_WINDOWS)
++//#ifndef PLATFORM_WINDOWS
++//#include "tensorflow/core/debug/debug_service.grpc.pb.h"
++
++//namespace tensorflow {
++
++//class DebugGrpcChannel {
++ //public:
++  //// Constructor of DebugGrpcChannel.
++  ////
++  //// Args:
++  ////   server_stream_addr: Address (host name and port) of the debug stream
++  ////     server implementing the EventListener service (see
++  ////     debug_service.proto). E.g., "127.0.0.1:12345".
++  //DebugGrpcChannel(const string& server_stream_addr);
++
++  //virtual ~DebugGrpcChannel() {}
++
++  //// Attempt to establish connection with server.
++  ////
++  //// Args:
++  ////   timeout_micros: Timeout (in microseconds) for the attempt to establish
++  ////     the connection.
++  ////
++  //// Returns:
++  ////   OK Status iff connection is successfully established before timeout,
++  ////   otherwise return an error Status.
++  //Status Connect(const int64 timeout_micros);
++
++  //// Write an Event proto to the debug gRPC stream.
++  ////
++  //// Thread-safety: Safe with respect to other calls to the same method and
++  ////   calls to ReadEventReply() and Close().
++  ////
++  //// Args:
++  ////   event: The event proto to be written to the stream.
++  ////
++  //// Returns:
++  ////   True iff the write is successful.
++  //bool WriteEvent(const Event& event);
++
++  //// Read an EventReply proto from the debug gRPC stream.
++  ////
++  //// This method blocks and waits for an EventReply from the server.
++  //// Thread-safety: Safe with respect to other calls to the same method and
++  ////   calls to WriteEvent() and Close().
++  ////
++  //// Args:
++  ////   event_reply: the to-be-modified EventReply proto passed as reference.
++  ////
++  //// Returns:
++  ////   True iff the read is successful.
++  //bool ReadEventReply(EventReply* event_reply);
++
++  //// Receive and process EventReply protos from the gRPC debug server.
++  ////
++  //// The processing includes setting debug watch key states using the
++  //// DebugOpStateChange fields of the EventReply.
++  ////
++  //// Args:
++  ////   max_replies: Maximum number of replies to receive. Will receive all
++  ////     remaining replies iff max_replies == 0.
++  //void ReceiveAndProcessEventReplies(size_t max_replies);
++
++  //// Receive EventReplies from server (if any) and close the stream and the
++  //// channel.
++  //Status ReceiveServerRepliesAndClose();
++
++ //private:
++  //string server_stream_addr_;
++  //string url_;
++  //::grpc::ClientContext ctx_;
++  //std::shared_ptr<::grpc::Channel> channel_;
++  //std::unique_ptr<EventListener::Stub> stub_;
++  //std::unique_ptr<::grpc::ClientReaderWriterInterface<Event, EventReply>>
++      //reader_writer_;
++
++  //mutex mu_;
++//};
++
++//class DebugGrpcIO {
++ //public:
++  //static const size_t kGrpcMessageSizeLimitBytes;
++  //static const size_t kGrpcMaxVarintLengthSize;
++
++  //// Sends a tensor through a debug gRPC stream.
++  //static Status SendTensorThroughGrpcStream(const DebugNodeKey& debug_node_key,
++                                            //const Tensor& tensor,
++                                            //const uint64 wall_time_us,
++                                            //const string& grpc_stream_url,
++                                            //const bool gated);
++
++  //// Sends an Event proto through a debug gRPC stream.
++  //// Thread-safety: Safe with respect to other calls to the same method and
++  //// calls to CloseGrpcStream().
++  ////
++  //// Args:
++  ////   event_proto: The Event proto to be sent.
++  ////   grpc_stream_url: The grpc:// URL of the stream to use, e.g.,
++  ////     "grpc://localhost:11011", "localhost:22022".
++  ////   receive_reply: Whether an EventReply proto will be read after event_proto
++  ////     is sent and before the function returns.
++  ////
++  //// Returns:
++  ////   The Status of the operation.
++  //static Status SendEventProtoThroughGrpcStream(
++      //const Event& event_proto, const string& grpc_stream_url,
++      //const bool receive_reply = false);
++
++  //// Receive an EventReply proto through a debug gRPC stream.
++  //static Status ReceiveEventReplyProtoThroughGrpcStream(
++      //EventReply* event_reply, const string& grpc_stream_url);
++
++  //// Check whether a debug watch key is read-activated at a given gRPC URL.
++  //static bool IsReadGateOpen(const string& grpc_debug_url,
++                             //const string& watch_key);
++
++  //// Check whether a debug watch key is write-activated (i.e., read- and
++  //// write-activated) at a given gRPC URL.
++  //static bool IsWriteGateOpen(const string& grpc_debug_url,
++                              //const string& watch_key);
++
++  //// Closes a gRPC stream to the given address, if it exists.
++  //// Thread-safety: Safe with respect to other calls to the same method and
++  //// calls to SendTensorThroughGrpcStream().
++  //static Status CloseGrpcStream(const string& grpc_stream_url);
++
++  //// Set the gRPC state of a debug node key.
++  //// TODO(cais): Include device information in watch_key.
++  //static void SetDebugNodeKeyGrpcState(
++      //const string& grpc_debug_url, const string& watch_key,
++      //const EventReply::DebugOpStateChange::State new_state);
++
++ //private:
++  //using DebugNodeName2State =
++      //std::unordered_map<string, EventReply::DebugOpStateChange::State>;
++
++  //// Returns a global map from grpc debug URLs to the corresponding
++  //// DebugGrpcChannels.
++  //static std::unordered_map<string, std::unique_ptr<DebugGrpcChannel>>*
++  //GetStreamChannels();
++
++  //// Get a DebugGrpcChannel object at a given URL, creating one if necessary.
++  ////
++  //// Args:
++  ////   grpc_stream_url: grpc:// URL of the stream, e.g., "grpc://localhost:6064"
++  ////   debug_grpc_channel: A pointer to the DebugGrpcChannel object, passed as a
++  ////     a pointer to the pointer. The DebugGrpcChannel object is owned
++  ////     statically elsewhere, not by the caller of this function.
++  ////
++  //// Returns:
++  ////   Status of this operation.
++  //static Status GetOrCreateDebugGrpcChannel(
++      //const string& grpc_stream_url, DebugGrpcChannel** debug_grpc_channel);
++
++  //// Returns a map from debug URL to a map from debug op name to enabled state.
++  //static std::unordered_map<string, DebugNodeName2State>*
++  //GetEnabledDebugOpStates();
++
++  //// Returns a map from debug op names to enabled state, for a given debug URL.
++  //static DebugNodeName2State* GetEnabledDebugOpStatesAtUrl(
++      //const string& grpc_debug_url);
++
++  //// Clear enabled debug op state from all debug URLs (if any).
++  //static void ClearEnabledWatchKeys();
++
++  //static mutex streams_mu;
++  //static int64 channel_connection_timeout_micros;
++
++  //friend class GrpcDebugTest;
++  //friend class DebugNumericSummaryOpTest;
++//};
++
++//}  // namespace tensorflow
++//#endif  // #ifndef(PLATFORM_WINDOWS)
+ 
+ #endif  // TENSORFLOW_DEBUG_IO_UTILS_H_
