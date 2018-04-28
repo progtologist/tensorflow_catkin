@@ -1,0 +1,12 @@
+diff --git a/tensorflow/contrib/cmake/external/png.cmake b/tensorflow/contrib/cmake/external/png.cmake
+index ad2af01bc0..1a4fd55655 100644
+--- a/tensorflow/contrib/cmake/external/png.cmake
++++ b/tensorflow/contrib/cmake/external/png.cmake
+@@ -57,6 +57,7 @@ ExternalProject_Add(png
+         -DCMAKE_BUILD_TYPE:STRING=Release
+         -DCMAKE_VERBOSE_MAKEFILE:BOOL=OFF
+         -DCMAKE_INSTALL_PREFIX:STRING=${png_INSTALL}
++        -DCMAKE_INSTALL_LIBDIR:STRING=lib
+ 	-DZLIB_ROOT:STRING=${ZLIB_INSTALL}
+ )
+ 
