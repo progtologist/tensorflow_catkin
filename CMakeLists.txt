@@ -17,6 +17,8 @@ ExternalProject_Add(tensorflow_src
   GIT_TAG 3e582feec7b7e1b71d5a4b590edc1e4d4e4a3126
   PATCH_COMMAND bash -c "for i in ${CMAKE_SOURCE_DIR}/patches/*.patch\$<SEMICOLON> do git apply -p1 $i\$<SEMICOLON> done"
   UPDATE_COMMAND ""
+  BUILD_COMMAND make install -j8
+  INSTALL_COMMAND echo "Install"
   SOURCE_DIR tensorflow_src
   SOURCE_SUBDIR tensorflow/contrib/cmake
   BINARY_DIR tensorflow_build

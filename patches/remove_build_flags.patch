@@ -1,0 +1,61 @@
+diff --git a/tensorflow/contrib/cmake/CMakeLists.txt b/tensorflow/contrib/cmake/CMakeLists.txt
+index d75b1b1..507dc72 100644
+--- a/tensorflow/contrib/cmake/CMakeLists.txt
++++ b/tensorflow/contrib/cmake/CMakeLists.txt
+@@ -92,8 +92,8 @@ if (WIN32)
+   set(BOOL_WIN32 ON)
+ else (WIN32)
+   set(BOOL_WIN32 OFF)
+-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
++  #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
++  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+ endif (WIN32)
+ 
+ # [CLEANUP] Remove when done
+@@ -160,17 +160,17 @@ if(WIN32)
+   set(CMAKE_SUPPRESS_REGENERATION ON)
+ endif()
+ 
+-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -std=c++11")
+-endif()
+-
+-if (tensorflow_OPTIMIZE_FOR_NATIVE_ARCH)
+-  include(CheckCXXCompilerFlag)
+-  CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_OPT_ARCH_NATIVE_SUPPORTED)
+-  if (COMPILER_OPT_ARCH_NATIVE_SUPPORTED)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+-  endif()
+-endif()
++#if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
++  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-exceptions -std=c++11")
++#endif()
++
++#if (tensorflow_OPTIMIZE_FOR_NATIVE_ARCH)
++  #include(CheckCXXCompilerFlag)
++  #CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_OPT_ARCH_NATIVE_SUPPORTED)
++  #if (COMPILER_OPT_ARCH_NATIVE_SUPPORTED)
++    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
++  #endif()
++#endif()
+ 
+ # MSVC SIMD instructions
+ if (tensorflow_WIN_CPU_SIMD_OPTIONS)
+diff --git a/tensorflow/contrib/cmake/tf_stream_executor.cmake b/tensorflow/contrib/cmake/tf_stream_executor.cmake
+index 9a37b68..14f8df7 100644
+--- a/tensorflow/contrib/cmake/tf_stream_executor.cmake
++++ b/tensorflow/contrib/cmake/tf_stream_executor.cmake
+@@ -82,9 +82,9 @@ endif()
+ #)
+ #list(REMOVE_ITEM tf_stream_executor_srcs ${tf_stream_executor_test_srcs})
+ 
+-if (NOT WIN32)
+-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lgomp")
+-endif (NOT WIN32)
++#if (NOT WIN32)
++  #set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lgomp")
++#endif (NOT WIN32)
+ add_library(tf_stream_executor OBJECT ${tf_stream_executor_srcs})
+ 
+ add_dependencies(tf_stream_executor
