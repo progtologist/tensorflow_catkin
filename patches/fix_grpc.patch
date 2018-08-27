@@ -1,24 +1,22 @@
 diff --git a/tensorflow/contrib/cmake/tf_c.cmake b/tensorflow/contrib/cmake/tf_c.cmake
-index 2e0a2fc..2bb4527 100644
+index c6a15f2..98387b1 100644
 --- a/tensorflow/contrib/cmake/tf_c.cmake
 +++ b/tensorflow/contrib/cmake/tf_c.cmake
-@@ -19,10 +19,10 @@ set(tf_c_srcs
+@@ -19,9 +19,9 @@ set(tf_c_srcs
      "${tensorflow_source_dir}/tensorflow/c/c_api.cc"
      "${tensorflow_source_dir}/tensorflow/c/c_api.h"
      "${tensorflow_source_dir}/tensorflow/c/c_api_function.cc"
 -    "${tensorflow_source_dir}/tensorflow/c/eager/c_api.cc"
 -    "${tensorflow_source_dir}/tensorflow/c/eager/c_api.h"
--    "${tensorflow_source_dir}/tensorflow/c/eager/c_api_debug.cc"
 -    "${tensorflow_source_dir}/tensorflow/c/eager/tape.h"
-+    #"${tensorflow_source_dir}/tensorflow/c/eager/c_api.cc"
-+    #"${tensorflow_source_dir}/tensorflow/c/eager/c_api.h"
-+    #"${tensorflow_source_dir}/tensorflow/c/eager/c_api_debug.cc"
-+    #"${tensorflow_source_dir}/tensorflow/c/eager/tape.h"
++    # "${tensorflow_source_dir}/tensorflow/c/eager/c_api.cc"
++    # "${tensorflow_source_dir}/tensorflow/c/eager/c_api.h"
++    # "${tensorflow_source_dir}/tensorflow/c/eager/tape.h"
+     "${tensorflow_source_dir}/tensorflow/c/eager/runtime.cc"
+     "${tensorflow_source_dir}/tensorflow/c/eager/runtime.h"
      "${tensorflow_source_dir}/tensorflow/c/checkpoint_reader.cc"
-     "${tensorflow_source_dir}/tensorflow/c/checkpoint_reader.h"
-     "${tensorflow_source_dir}/tensorflow/c/tf_status_helper.cc"
 diff --git a/tensorflow/contrib/cmake/tf_core_cpu.cmake b/tensorflow/contrib/cmake/tf_core_cpu.cmake
-index a54cbff..b3d991d 100644
+index e4213ea..c4f2483 100644
 --- a/tensorflow/contrib/cmake/tf_core_cpu.cmake
 +++ b/tensorflow/contrib/cmake/tf_core_cpu.cmake
 @@ -20,8 +20,8 @@ file(GLOB_RECURSE tf_core_cpu_srcs
@@ -27,13 +25,13 @@ index a54cbff..b3d991d 100644
      "${tensorflow_source_dir}/tensorflow/core/common_runtime/*.cc"
 -    "${tensorflow_source_dir}/tensorflow/core/debug/*.h"
 -    "${tensorflow_source_dir}/tensorflow/core/debug/*.cc"
-+    #"${tensorflow_source_dir}/tensorflow/core/debug/*.h"
-+    #"${tensorflow_source_dir}/tensorflow/core/debug/*.cc"
++    # "${tensorflow_source_dir}/tensorflow/core/debug/*.h"
++    # "${tensorflow_source_dir}/tensorflow/core/debug/*.cc"
      "${tensorflow_source_dir}/tensorflow/core/distributed_runtime/server_lib.h"
      "${tensorflow_source_dir}/tensorflow/core/distributed_runtime/server_lib.cc"
      "${tensorflow_source_dir}/tensorflow/core/graph/*.h"
 diff --git a/tensorflow/contrib/cmake/tf_core_framework.cmake b/tensorflow/contrib/cmake/tf_core_framework.cmake
-index d044ac7..7ae6f17 100644
+index 129c208..42171b7 100644
 --- a/tensorflow/contrib/cmake/tf_core_framework.cmake
 +++ b/tensorflow/contrib/cmake/tf_core_framework.cmake
 @@ -180,10 +180,11 @@ else()
@@ -44,20 +42,20 @@ index d044ac7..7ae6f17 100644
 -      ${tensorflow_source_dir} ${tf_protos_grpc_cc_srcs}
 -  )
 -  add_library(tf_protos_cc ${PROTO_GRPC_SRCS} ${PROTO_GRPC_HDRS} ${PROTO_SRCS} ${PROTO_HDRS})
-+  #RELATIVE_PROTOBUF_GENERATE_GRPC_CPP(PROTO_GRPC_SRCS PROTO_GRPC_HDRS
-+      #${tensorflow_source_dir} ${tf_protos_grpc_cc_srcs}
-+  #)
-+  #add_library(tf_protos_cc ${PROTO_GRPC_SRCS} ${PROTO_GRPC_HDRS} ${PROTO_SRCS} ${PROTO_HDRS})
++  # RELATIVE_PROTOBUF_GENERATE_GRPC_CPP(PROTO_GRPC_SRCS PROTO_GRPC_HDRS
++  #     ${tensorflow_source_dir} ${tf_protos_grpc_cc_srcs}
++  # )
++  # add_library(tf_protos_cc ${PROTO_GRPC_SRCS} ${PROTO_GRPC_HDRS} ${PROTO_SRCS} ${PROTO_HDRS})
 +  add_library(tf_protos_cc ${PROTO_SRCS} ${PROTO_HDRS})
  endif()
  
  ########################################################
 diff --git a/tensorflow/contrib/cmake/tf_core_kernels.cmake b/tensorflow/contrib/cmake/tf_core_kernels.cmake
-index 844f626..502c12b 100644
+index 6927bf0..8a7300f 100644
 --- a/tensorflow/contrib/cmake/tf_core_kernels.cmake
 +++ b/tensorflow/contrib/cmake/tf_core_kernels.cmake
-@@ -143,6 +143,7 @@ file(GLOB tf_core_kernels_cloud_srcs
- list(REMOVE_ITEM tf_core_kernels_srcs ${tf_core_kernels_cloud_srcs})
+@@ -140,6 +140,7 @@ list(REMOVE_ITEM tf_core_kernels_srcs ${tf_core_kernels_cloud_srcs})
+ endif()
  
  file(GLOB_RECURSE tf_core_kernels_exclude_srcs
 +   "${tensorflow_source_dir}/tensorflow/core/kernels/*debug*"

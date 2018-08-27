@@ -1,10 +1,10 @@
 tensorflow_catkin
 ==============
 
-Catkin package wrapper for Tensorflow 1.8 C++
+Catkin package wrapper for Tensorflow 1.6 C++
 
 - Uses the CMake build and does __not__ require Bazel
-- Builds the [latest commit](https://github.com/tensorflow/tensorflow/tree/c1d223de41838e9d387a48137c76ea39d3b38f3f) of the master branch as of 24/06/2018
+- Builds the [released 1.6.0](https://github.com/tensorflow/tensorflow/tree/d2e24b6039433bd83478da8c8c2d6c58034be607)
 - Supports GPU using the `-DUSE_GPU` CMake flag
   - Assumes that the root directories of CUDA, CUDNN and NCCL are provided either as environment variables `CUDA_ROOT`, `CUDNN_ROOT` and `NCCL_ROOT`, or as flags `-DCUDA_ROOT`, `-DCUDNN_ROOT`, `-DNCCL_ROOT`
   - Supports CUDA >=8.0 and CUDNN >=6.0 (`-DCUDA_VERSION` and `-DCUDNN_VERSION` flags)
