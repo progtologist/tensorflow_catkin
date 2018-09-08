@@ -1,0 +1,26 @@
+diff --git a/tensorflow/contrib/nccl/kernels/nccl_manager.h b/tensorflow/contrib/nccl/kernels/nccl_manager.h
+index bb219e0..39c1845 100644
+--- a/tensorflow/contrib/nccl/kernels/nccl_manager.h
++++ b/tensorflow/contrib/nccl/kernels/nccl_manager.h
+@@ -20,7 +20,7 @@ limitations under the License.
+ #include <unordered_map>
+ #include <vector>
+ 
+-#include "src/nccl.h"
++#include "nccl.h"
+ #include "tensorflow/core/common_runtime/gpu/gpu_event_mgr.h"
+ #include "tensorflow/core/framework/tensor.h"
+ #include "tensorflow/core/platform/mutex.h"
+diff --git a/tensorflow/contrib/nccl/kernels/nccl_ops.cc b/tensorflow/contrib/nccl/kernels/nccl_ops.cc
+index 266d4f6..c8abf95 100644
+--- a/tensorflow/contrib/nccl/kernels/nccl_ops.cc
++++ b/tensorflow/contrib/nccl/kernels/nccl_ops.cc
+@@ -17,7 +17,7 @@ limitations under the License.
+ 
+ #include <vector>
+ 
+-#include "src/nccl.h"
++#include "nccl.h"
+ #include "tensorflow/contrib/nccl/kernels/nccl_manager.h"
+ #include "tensorflow/core/framework/op_kernel.h"
+ 
