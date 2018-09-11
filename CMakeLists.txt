@@ -12,27 +12,7 @@ set(NUM_MAKE_JOBS "" CACHE STRING "Number of jobs concurrently run during the bu
 set(CUDA_VERSION $ENV{CUDA_VERSION} CACHE STRING "CUDA version")
 set(CUDNN_VERSION $ENV{CUDNN_VERSION} CACHE STRING "CUDNN version")
 
-if(${CMAKE_VERSION} VERSION_LESS "3.7.0")
-       # ExternalProject_Add doesn't know the option SOURCE_SUBDIR in CMake before 3.7
-       file(DOWNLOAD "https://raw.githubusercontent.com/Kitware/CMake/v3.8.0/Modules/ExternalProject.cmake" ${CMAKE_CURRENT_SOURCE_DIR}/ExternalProject.cmake)
-       include(${CMAKE_CURRENT_SOURCE_DIR}/ExternalProject.cmake)
-else()
-  include(ExternalProject)
-endif()
-
-file(MAKE_DIRECTORY ${CATKIN_DEVEL_PREFIX}/include)
-
-ExternalProject_Add(tensorflow_src
-  GIT_REPOSITORY https://github.com/tensorflow/tensorflow.git
-  GIT_TAG d2e24b6039433bd83478da8c8c2d6c58034be607
-  PATCH_COMMAND bash -c "for i in ${PROJECT_SOURCE_DIR}/patches/*.patch\$<SEMICOLON> do git apply -p1 $i\$<SEMICOLON> done"
-  UPDATE_COMMAND ""
-  BUILD_COMMAND make -j${NUM_MAKE_JOBS} install
-  INSTALL_COMMAND echo "Install"
-  SOURCE_DIR tensorflow_src
-  SOURCE_SUBDIR tensorflow/contrib/cmake
-  BINARY_DIR tensorflow_build
-  CMAKE_ARGS
+set(tensorflow_args 
     -DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
     -DCMAKE_BUILD_TYPE=Release
     -DCMAKE_INSTALL_PREFIX=${CATKIN_DEVEL_PREFIX}
@@ -57,7 +37,14 @@ ExternalProject_Add(tensorflow_src
     -Dtensorflow_PATH_CUDNN_STATIC_LIB=${CUDNN_ROOT}/lib64
     -Dtensorflow_CUDA_VERSION=${CUDA_VERSION}
     -Dtensorflow_CUDNN_VERSION=${CUDNN_VERSION}
-)
+  )
+
+include(cmake/Modules/build_external_project_cmake.cmake)
+build_external_project_cmake(tensorflow
+  tensorflow/contrib/cmake
+  https://github.com/tensorflow/tensorflow.git
+  d2e24b6039433bd83478da8c8c2d6c58034be607
+  "${tensorflow_args}")
 
 add_library(tensorflow SHARED IMPORTED GLOBAL)
 set_target_properties(tensorflow PROPERTIES 
