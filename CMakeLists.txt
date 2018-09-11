@@ -71,7 +71,7 @@ install(FILES
   DESTINATION ${CATKIN_GLOBAL_SHARE_DESTINATION}/Tensorflow/cmake)
 
 cs_add_library(${PROJECT_NAME} src/dependency_tracker.cc)
-add_dependencies(${PROJECT_NAME} tensorflow_src)
+add_dependencies(${PROJECT_NAME} tensorflow)
 target_link_libraries(${PROJECT_NAME} tensorflow)
 
 cs_install()
