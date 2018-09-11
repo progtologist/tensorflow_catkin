@@ -14,7 +14,7 @@ function(build_external_project_cmake target source_subdir url tag args) #FOLLOW
 
     if(${CMAKE_VERSION} VERSION_LESS "3.7.0")
        # ExternalProject_Add doesn't know the option SOURCE_SUBDIR in CMake before 3.7
-       file(DOWNLOAD "https://raw.githubusercontent.com/Kitware/CMake/v3.8.0/Modules/ExternalProject.cmake" ${trigger_build_dir}/ExternalProject.cmake)
+       file(DOWNLOAD \"https://raw.githubusercontent.com/Kitware/CMake/v3.8.0/Modules/ExternalProject.cmake\" ${trigger_build_dir}/ExternalProject.cmake)
        include(${trigger_build_dir}/ExternalProject.cmake)
     else()
         include(ExternalProject)
@@ -29,7 +29,7 @@ function(build_external_project_cmake target source_subdir url tag args) #FOLLOW
             GIT_TAG ${tag}
             PATCH_COMMAND bash -c \"for i in ${PROJECT_SOURCE_DIR}/patches/*.patch\$<SEMICOLON> do git apply -p1 $i\$<SEMICOLON> done\"
             UPDATE_COMMAND \"\"
-            BUILD_COMMAND make -j${CORES} install
+            BUILD_COMMAND make -j\${CORES} install
             INSTALL_COMMAND echo \"Install\"
             SOURCE_DIR ${target}_src
             SOURCE_SUBDIR ${source_subdir}
