@@ -12,7 +12,7 @@ function(build_external_project_cmake target source_subdir url tag args) #FOLLOW
     set(CMAKE_LIST_CONTENT "
     cmake_minimum_required(VERSION 2.8)
 
-    if(${CMAKE_VERSION} VERSION_LESS "3.7.0")
+    if(\${CMAKE_VERSION} VERSION_LESS \"3.7.0\")
        # ExternalProject_Add doesn't know the option SOURCE_SUBDIR in CMake before 3.7
        file(DOWNLOAD \"https://raw.githubusercontent.com/Kitware/CMake/v3.8.0/Modules/ExternalProject.cmake\" ${trigger_build_dir}/ExternalProject.cmake)
        include(${trigger_build_dir}/ExternalProject.cmake)
